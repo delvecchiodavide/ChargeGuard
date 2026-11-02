@@ -186,3 +186,9 @@ The latches (`PolicyState`) are persisted, so a calibration survives an app rela
 - Apple doesn't document the SMC keys, and they change between firmware versions: see the table above and the macOS 27 column.
 - During sleep on Apple Silicon, the only way to enforce the limit is to inhibit charging before the Mac falls asleep. As a result, a Mac that sleeps below the limit does not charge.
 - There are no system notifications: the helper's safety overrides appear as a message in the popover.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+ChargeGuard writes to undocumented SMC keys. Use it at your own risk: the software is provided without warranty of any kind.
