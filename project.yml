@@ -1,0 +1,81 @@
+# XcodeGen spec:  brew install xcodegen && xcodegen generate && open ChargeGuard.xcodeproj
+name: ChargeGuard
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: "JW6AG8C8Q4"            # <-- your Team ID (same for app and helper!)
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    DEAD_CODE_STRIPPING: YES
+
+packages:
+  ChargeGuardKit:
+    path: .                         # this directory's Package.swift (SMCKit, ChargeCore)
+
+targets:
+  ChargeGuardHelper:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/ChargeGuardHelper
+    dependencies:
+      - package: ChargeGuardKit
+        product: ChargeCore
+      - package: ChargeGuardKit
+        product: SMCKit
+    settings:
+      base:
+        PRODUCT_NAME: ChargeGuardHelper
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.chargeguard.helper
+        INFOPLIST_FILE: Resources/Helper/Info.plist
+        CREATE_INFOPLIST_SECTION_IN_BINARY: YES   # -sectcreate __TEXT __info_plist
+        CODE_SIGN_ENTITLEMENTS: Resources/Helper/ChargeGuardHelper.entitlements
+        SKIP_INSTALL: YES
+
+  ChargeGuard:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/ChargeGuardApp
+      - Resources/App/Assets.xcassets
+      - path: Resources/Helper/com.example.chargeguard.helper.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
+    dependencies:
+      - package: ChargeGuardKit
+        product: ChargeCore
+      - package: ChargeGuardKit
+        product: SMCKit
+      - sdk: ServiceManagement.framework
+      - sdk: IOKit.framework
+      - target: ChargeGuardHelper
+        copy:
+          destination: executables        # -> ChargeGuard.app/Contents/MacOS/ChargeGuardHelper
+        codeSign: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.chargeguard
+        INFOPLIST_FILE: Resources/App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Resources/App/ChargeGuard.entitlements
+        GENERATE_INFOPLIST_FILE: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  cgctl:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/cgctl
+    dependencies:
+      - package: ChargeGuardKit
+        product: ChargeCore
+      - package: ChargeGuardKit
+        product: SMCKit

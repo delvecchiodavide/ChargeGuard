@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The App Sandbox blocks IOServiceOpen on AppleSMC and privileged Mach
+     lookups, so the app is not sandboxed (it is distributed with Developer ID,
+     not the Mac App Store). Hardened Runtime stays ON (build setting). -->
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+</dict>
+</plist>
