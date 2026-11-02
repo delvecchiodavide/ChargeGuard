@@ -5,3 +5,5 @@ build/
 DerivedData/
 .DS_Store
 *.orig
+dist/
+*.dmg

@@ -59,9 +59,19 @@ ChargeGuard/
 ├─ Resources/
 │  ├─ App/        Info.plist (LSUIElement), entitlements, Assets.xcassets (app icon)
 │  └─ Helper/     Info.plist (embedded in the binary), launchd plist, entitlements
-├─ Scripts/render-icon.swift     draws the app icon at every macOS size
+├─ Scripts/
+│  ├─ render-icon.swift          draws the app icon at every macOS size
+│  └─ make-dmg.sh                Release build + signed drag-to-install DMG
 └─ Tests/ChargeCoreTests/        policy tests (swift test)
 ```
+
+## Install
+
+Download the DMG from the [latest release](https://github.com/delvecchiodavide/ChargeGuard/releases/latest), open it and drag **ChargeGuard** into **Applications**. Launch it, press **Install Helper** in the menu bar popover, and enable ChargeGuard in **System Settings › General › Login Items & Extensions**.
+
+The release builds are signed with an Apple Development certificate and are not notarized. On first launch macOS reports that it can't verify the developer: right-click the app › **Open**, or go to System Settings › Privacy & Security › **Open Anyway**.
+
+To build the DMG yourself: `Scripts/make-dmg.sh` (output in `dist/`). With a Developer ID certificate, `NOTARY_PROFILE=<keychain profile> Scripts/make-dmg.sh` also notarizes and staples it.
 
 ## Xcode setup
 
