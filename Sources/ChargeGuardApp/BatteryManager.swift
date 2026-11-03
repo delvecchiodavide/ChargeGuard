@@ -4,6 +4,7 @@ import AppKit
 import Foundation
 import IOKit.ps
 import IOKit.pwr_mgt
+import ServiceManagement
 import SMCKit
 
 /// Drives the whole app: reads telemetry, runs `ChargePolicy`, and pushes the
@@ -26,6 +27,7 @@ final class BatteryManager: ObservableObject {
     @Published private(set) var canForceDischarge = false
     /// macOS 27+ Apple Silicon: charging is limited by macOS itself (System Settings › Battery).
     @Published private(set) var usesNativeChargeLimit = false
+    @Published private(set) var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Published private(set) var lastError: String?
 
     private let helper = HelperClient()
@@ -45,6 +47,7 @@ final class BatteryManager: ObservableObject {
     private static let settingsKey = "ChargeSettings"
     private static let policyKey = "PolicyState"
     private static let pollInterval: TimeInterval = 10
+    private static let launchAtLoginOfferedKey = "LaunchAtLoginOffered"
 
     init() {
         let defaults = UserDefaults.standard
@@ -64,6 +67,12 @@ final class BatteryManager: ObservableObject {
     // MARK: Lifecycle
 
     func start() {
+        // A limiter that isn't running protects nothing: start at login by default,
+        // once. The user can turn it off from the popover.
+        if !UserDefaults.standard.bool(forKey: Self.launchAtLoginOfferedKey) {
+            UserDefaults.standard.set(true, forKey: Self.launchAtLoginOfferedKey)
+            setLaunchAtLogin(true)
+        }
         observePowerSources()
         observeSleep()
         pollTimer = Timer.scheduledTimer(withTimeInterval: Self.pollInterval, repeats: true) { [weak self] _ in
@@ -134,6 +143,19 @@ final class BatteryManager: ObservableObject {
 
     func openLoginItemsSettings() {
         helper.openLoginItemsSettings()
+    }
+
+    func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            lastError = "Launch at login: \(error.localizedDescription)"
+        }
+        launchAtLogin = SMAppService.mainApp.status == .enabled
     }
 
     func openBatterySettings() {
@@ -283,9 +305,9 @@ final class BatteryManager: ObservableObject {
     private func handlePowerMessage(_ type: UInt32, argument: UnsafeMutableRawPointer?) {
         let ack = { [rootPowerDomain] in _ = IOAllowPowerChange(rootPowerDomain, Int(bitPattern: argument)) }
         switch type {
-        case UInt32(kIOMessageCanSystemSleep):
+        case kIOMessageCanSystemSleep:
             ack()
-        case UInt32(kIOMessageSystemWillSleep):
+        case kIOMessageSystemWillSleep:
             // The app can't run while asleep, so the limit can't be enforced:
             // optionally inhibit charging first. Sleep waits for our ack (max ~30 s).
             let inhibit = settings.stopChargingWhenSleeping && settings.limitEnabled
@@ -297,7 +319,7 @@ final class BatteryManager: ObservableObject {
                 applied.charging = false
                 ack()
             }
-        case UInt32(kIOMessageSystemHasPoweredOn):
+        case kIOMessageSystemHasPoweredOn:
             applied = (nil, nil, nil)
             evaluate()
         default:
@@ -306,12 +328,9 @@ final class BatteryManager: ObservableObject {
     }
 }
 
-// IOKit message constants are C macros that Swift can't import.
-private let kIOMessageCanSystemSleep: Int32 = iokitMessage(0x270)
-private let kIOMessageSystemWillSleep: Int32 = iokitMessage(0x280)
-private let kIOMessageSystemHasPoweredOn: Int32 = iokitMessage(0x300)
-
-private func iokitMessage(_ code: Int32) -> Int32 {
-    // iokit_common_msg(message) = sys_iokit | sub_iokit_common | message
-    Int32(bitPattern: 0xE000_0000) | code
-}
+// IOKit message constants are C macros that Swift can't import:
+// iokit_common_msg(code) = sys_iokit (0xE0000000) | sub_iokit_common (0) | code.
+// They must stay UInt32: as Int32 they are negative, and UInt32(negative) traps.
+private let kIOMessageCanSystemSleep: UInt32 = 0xE000_0270
+private let kIOMessageSystemWillSleep: UInt32 = 0xE000_0280
+private let kIOMessageSystemHasPoweredOn: UInt32 = 0xE000_0300

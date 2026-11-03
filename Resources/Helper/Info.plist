@@ -1,18 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Embedded into the helper binary (__TEXT,__info_plist) so codesign gives it
-     the identifier the app's code-signing requirement checks. -->
 <plist version="1.0">
 <dict>
-    <key>CFBundleIdentifier</key>
-    <string>com.example.chargeguard.helper</string>
-    <key>CFBundleName</key>
-    <string>ChargeGuardHelper</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.example.chargeguard.helper</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>ChargeGuardHelper</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.1</string>
+	<key>CFBundleVersion</key>
+	<string>2</string>
 </dict>
 </plist>

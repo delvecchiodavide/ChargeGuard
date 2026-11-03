@@ -417,8 +417,15 @@ struct MenuBarView: View {
     // MARK: - Footer
 
     private var footer: some View {
-        HStack {
-            Toggle("Stop charging when sleeping", isOn: binding(\.stopChargingWhenSleeping))
+        HStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 6) {
+                Toggle("Launch at login", isOn: Binding(
+                    get: { manager.launchAtLogin },
+                    set: { manager.setLaunchAtLogin($0) }
+                ))
+                Toggle("Stop charging when sleeping", isOn: binding(\.stopChargingWhenSleeping))
+                    .disabled(manager.usesNativeChargeLimit)
+            }
 
             Spacer()
 
