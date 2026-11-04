@@ -85,16 +85,19 @@ struct MenuBarView: View {
                 .tint(headerTint)
                 .frame(height: 6)
                 .overlay(alignment: .leading) {
-                    GeometryReader { geo in
-                        Rectangle()
-                            .fill(Color.secondary)
-                            .frame(width: 2, height: 10)
-                            .offset(x: geo.size.width * CGFloat(limit) / 100 - 1)
+                    // With the native limit our value isn't enforced: don't draw it as if it were.
+                    if !manager.usesNativeChargeLimit {
+                        GeometryReader { geo in
+                            Rectangle()
+                                .fill(Color.secondary)
+                                .frame(width: 2, height: 10)
+                                .offset(x: geo.size.width * CGFloat(limit) / 100 - 1)
+                        }
                     }
                 }
 
             HStack(spacing: 4) {
-                Text("Limit \(limit)%")
+                Text(manager.usesNativeChargeLimit ? "Limit set in System Settings" : "Limit \(limit)%")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
 
