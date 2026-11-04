@@ -19,6 +19,7 @@ final class HelperService: NSObject, NSXPCListenerDelegate, BatteryHelperProtoco
     private var lastHeartbeat = DispatchTime.now()
     private var watchdog: DispatchSourceTimer?
     private var signalSources: [DispatchSourceSignal] = []
+    private var binaryWatcher: DispatchSourceFileSystemObject?
 
     override init() {
         do {
@@ -57,6 +58,7 @@ final class HelperService: NSObject, NSXPCListenerDelegate, BatteryHelperProtoco
         listener.resume()
         startWatchdog()
         installSignalHandlers()
+        watchOwnBinary()
         log.info("ChargeGuard helper \(HelperConstants.helperVersion, privacy: .public) listening")
     }
 
@@ -187,5 +189,24 @@ final class HelperService: NSObject, NSXPCListenerDelegate, BatteryHelperProtoco
             source.resume()
             signalSources.append(source)
         }
+    }
+
+    /// When the app is updated, our executable on disk is replaced while this process keeps
+    /// running the old code. The app validates the helper against the file on disk, so it would
+    /// refuse every reply. Exit instead: launchd starts the new binary on the next connection.
+    private func watchOwnBinary() {
+        let fd = open(Bundle.main.executablePath ?? CommandLine.arguments[0], O_EVTONLY)
+        guard fd >= 0 else { return }
+        let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd,
+                                                               eventMask: [.delete, .rename, .write],
+                                                               queue: queue)
+        source.setEventHandler { [weak self] in
+            self?.controller?.restoreDefaults()
+            log.notice("Helper binary replaced on disk: defaults restored, exiting for relaunch")
+            exit(EXIT_SUCCESS)
+        }
+        source.setCancelHandler { close(fd) }
+        source.resume()
+        binaryWatcher = source
     }
 }
