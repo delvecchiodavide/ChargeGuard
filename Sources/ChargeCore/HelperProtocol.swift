@@ -9,7 +9,7 @@ public enum HelperConstants {
     /// Name of the plist shipped in ChargeGuard.app/Contents/Library/LaunchDaemons/.
     public static let daemonPlistName = "com.example.chargeguard.helper.plist"
     /// Bump whenever the XPC protocol changes; the app re-registers a mismatched helper.
-    public static let helperVersion = "1.0.0"
+    public static let helperVersion = "1.0.2"
     /// Without a heartbeat for this long, the helper assumes the app crashed and restores defaults.
     public static let orphanTimeout: TimeInterval = 5 * 60
     public static let heartbeatInterval: TimeInterval = 60

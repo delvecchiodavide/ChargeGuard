@@ -36,6 +36,8 @@ final class BatteryManager: ObservableObject {
     /// Last decision successfully applied; nil forces a re-apply (e.g. after reconnect or wake).
     private var applied: (charging: Bool?, adapter: Bool?, limit: Int?) = (nil, nil, nil)
     private var applyTask: Task<Void, Never>?
+    /// One re-registration per launch when the helper can't be reached.
+    private var didReregisterHelper = false
 
     private var pollTimer: Timer?
     private var heartbeatTimer: Timer?
@@ -203,6 +205,18 @@ final class BatteryManager: ObservableObject {
             applied = (nil, nil, nil)
             evaluate()
         } catch {
+            // Typically a daemon still running the binary of a previous app version: the
+            // file on disk changed, so its code signature no longer validates. Re-registering
+            // makes launchd stop it and start the new binary.
+            if !didReregisterHelper {
+                didReregisterHelper = true
+                appLog.notice("Helper unreachable (\(error.localizedDescription, privacy: .public)), re-registering")
+                try? await helper.unregister()
+                // May throw EPERM if macOS asks for approval again; connectHelper()
+                // then reports .requiresApproval from the registration status.
+                try? helper.register()
+                return await connectHelper()
+            }
             helperStatus = .failed(error.localizedDescription)
         }
     }
