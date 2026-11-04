@@ -8,7 +8,7 @@ struct ChargeGuardApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            MenuBarView(manager: appDelegate.manager)
+            MenuBarView(manager: appDelegate.manager, updater: appDelegate.updater)
         } label: {
             MenuBarLabel(manager: appDelegate.manager)
         }
@@ -29,11 +29,13 @@ private struct MenuBarLabel: View {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let manager = BatteryManager()
+    let updater = UpdateChecker()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Menu bar only (also set LSUIElement in Info.plist so no Dock icon flashes at launch).
         NSApp.setActivationPolicy(.accessory)
         manager.start()
+        updater.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {

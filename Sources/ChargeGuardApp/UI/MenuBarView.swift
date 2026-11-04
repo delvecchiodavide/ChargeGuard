@@ -4,6 +4,7 @@ import ChargeCore
 
 struct MenuBarView: View {
     @ObservedObject var manager: BatteryManager
+    @ObservedObject var updater: UpdateChecker
 
     @State private var showCalibrationConfirmation = false
 
@@ -13,6 +14,10 @@ struct MenuBarView: View {
 
             if !manager.helperStatus.isReady {
                 helperBanner
+            }
+
+            if updater.available != nil || updater.phase != .idle || updater.lastCheckFoundNothing {
+                updateBanner
             }
 
             Divider()
@@ -417,6 +422,48 @@ struct MenuBarView: View {
         return String(format: "%d:%02d", hours, remainder)
     }
 
+    // MARK: - Updates
+
+    @ViewBuilder
+    private var updateBanner: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            switch updater.phase {
+            case .checking:
+                Label("Checking for updates…", systemImage: "arrow.triangle.2.circlepath")
+            case .downloading:
+                Label("Downloading update…", systemImage: "arrow.down.circle")
+            case .installing:
+                Label("Installing update…", systemImage: "shippingbox")
+            case .failed(let message):
+                Label("Update failed", systemImage: "exclamationmark.triangle")
+                Text(message).font(.caption).foregroundStyle(.secondary)
+                if updater.available != nil {
+                    Button("Open release page") { updater.openReleasePage() }
+                }
+            case .idle:
+                if let release = updater.available {
+                    Label("ChargeGuard \(release.version) is available", systemImage: "arrow.down.app")
+                        .font(.headline)
+                    Text("You have \(updater.currentVersion).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    HStack {
+                        Button("Install and relaunch") { updater.install() }
+                            .buttonStyle(.borderedProminent)
+                        Button("Release notes") { updater.openReleasePage() }
+                        Spacer()
+                        Button("Skip") { updater.skip() }
+                    }
+                } else if updater.lastCheckFoundNothing {
+                    Label("ChargeGuard \(updater.currentVersion) is up to date", systemImage: "checkmark.circle")
+                }
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.blue.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+    }
+
     // MARK: - Footer
 
     private var footer: some View {
@@ -432,10 +479,15 @@ struct MenuBarView: View {
 
             Spacer()
 
-            Button("Quit") {
+            VStack(alignment: .trailing, spacing: 6) {
+                Button("Check for updates") { updater.check(userInitiated: true) }
+                    .disabled(updater.isBusy)
+                    .help("ChargeGuard \(updater.currentVersion)")
+                Button("Quit") {
                 NSApplication.shared.terminate(nil)
             }
-            .keyboardShortcut("q")
+                .keyboardShortcut("q")
+            }
         }
     }
 

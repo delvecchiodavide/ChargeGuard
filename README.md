@@ -71,6 +71,12 @@ Download the DMG from the [latest release](https://github.com/delvecchiodavide/C
 
 The release builds are signed with an Apple Development certificate and are not notarized. On first launch macOS reports that it can't verify the developer: right-click the app › **Open**, or go to System Settings › Privacy & Security › **Open Anyway**.
 
+### Updates
+
+From 1.0.3, ChargeGuard checks the [latest GitHub release](https://github.com/delvecchiodavide/ChargeGuard/releases/latest) 10 seconds after launch and then once a day (or on demand with **Check for updates**). When a newer version exists, the popover offers **Install and relaunch**, **Release notes** or **Skip**. Installing downloads the release DMG, verifies that the app inside is signed by the same team with the same bundle identifier, swaps it in place and relaunches. If the app's folder isn't writable, it opens the release page instead.
+
+To publish an update, bump `CFBundleShortVersionString` in both Info.plists (and `HelperConstants.helperVersion`), run `Scripts/make-dmg.sh`, and attach the DMG to a release tagged `v<version>`.
+
 To build the DMG yourself: `Scripts/make-dmg.sh` (output in `dist/`). With a Developer ID certificate, `NOTARY_PROFILE=<keychain profile> Scripts/make-dmg.sh` also notarizes and staples it.
 
 ## Xcode setup
